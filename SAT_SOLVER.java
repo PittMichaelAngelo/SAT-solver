@@ -1,6 +1,8 @@
 package Sat_solver;
 
 import java.io.*;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Random;
 import java.util.Scanner;
 
@@ -86,8 +88,7 @@ public class SAT_SOLVER{
 			scan = new Scanner(System.in);
 			
 			System.out.print("Number of Nodes: ");
-			//n=scan.nextInt();
-			n=4;
+			n=scan.nextInt();
 			while(n<=0) {
 				System.out.print("Please give correct input: ");
 				n=scan.nextInt();
@@ -96,8 +97,7 @@ public class SAT_SOLVER{
 			
 			
 			System.out.print("Negative Edges Percentage: ");
-			//float neg=scan.nextFloat();
-			float neg=(float) 0.5;
+			float neg=scan.nextFloat();
 			while(neg<0 || neg>1) {
 				System.out.print("Please give correct input: ");
 				neg=scan.nextFloat();
@@ -105,17 +105,15 @@ public class SAT_SOLVER{
 			}
 			
 			System.out.print("Positive Edges Percentage: ");
-			//float pos=scan.nextFloat();
-			float pos=(float) 0.5;
+			float pos=scan.nextFloat();
 			while(pos<0 || pos>1 || pos+neg!=1.0) {
 				System.out.print("Please give correct input: ");
-				//pos=scan.nextFloat();
+				pos=scan.nextFloat();
 				
 			}
 			
 			System.out.print("Density: ");
-			//density=scan.nextFloat();
-			density=(float) 0.5;
+			density=scan.nextFloat();
 			while(density<0 || density>1) {
 				System.out.print("Please give correct input: ");
 				density=scan.nextFloat();
@@ -169,13 +167,14 @@ public class SAT_SOLVER{
 		for (int j=0; j<g.getN(); j++) {
 			for (int i=0; i<j; i++) {
 				if(sMatrix[i][j]=='-') {
-					clauses+=(3+3+3);
+					clauses+=(3);
 				}else if(sMatrix[i][j]=='+') {
-					clauses+=(6+3+3);
+					clauses+=(6);
 				}
 			}
 		}
-		clauses+=3;
+		clauses+=4*g.getN(); // make sure node is only in exactly one set
+		clauses+=3; // make sure not empty
 		
 		PrintWriter writer;
 		
@@ -184,35 +183,30 @@ public class SAT_SOLVER{
 		writer.write("p cnf ");
 		writer.write( var + " " +clauses + "\n");
 		
-		
+				
 		for (int j=0; j<g.getN(); j++) {
 			for(int i=0; i<j; i++) {
 				switch(sMatrix[i][j]) {
 				case '-':
 					for (int c=1; c<=3; c++) 
-						writer.write("-"+j+""+c + " " + "-"+i+""+c + " 0\n");
+						writer.write("-"+(j*3+c) + " " + "-"+(i*3+c)+ " 0\n");
 					break;
 				case '+':
 					for (int c=1; c<=3; c++) {
-						writer.write("-"+j+""+c + " " + i+""+c + " 0\n");
-						writer.write(j+""+c + " " + "-"+i+""+c + " 0\n");
+						writer.write("-"+(j*3+c) + " " + (i*3+c) + " 0\n");
+						writer.write((j*3+c) + " " + "-"+(i*3+c) + " 0\n");
 					}					
-					break;
-				default:
-					continue;
 				}
-				writer.write("-"+j+"1"+" "+"-"+j+"2"+ " 0\n"); //-j1 V -j2
-				writer.write("-"+j+"1"+" "+"-"+j+"3"+ " 0\n"); //-j1 V -j3
-				writer.write("-"+j+"2"+" "+"-"+j+"3"+ " 0\n"); //-j2 V -j3
-				writer.write("-"+i+"1"+" "+"-"+i+"2"+ " 0\n"); //-i1 V -i2
-				writer.write("-"+i+"1"+" "+"-"+i+"3"+ " 0\n"); //-i1 V -i3
-				writer.write("-"+i+"2"+" "+"-"+i+"3"+ " 0\n"); //-i2 V -i3
 			}
+			writer.write("-"+(j*3+1)+" "+"-"+(j*3+2)+ " 0\n"); //-j1 V -j2
+			writer.write("-"+(j*3+1)+" "+"-"+(j*3+3)+ " 0\n"); //-j1 V -j3
+			writer.write("-"+(j*3+2)+" "+"-"+(j*3+3)+ " 0\n"); //-j2 V -j3
+			writer.write((j*3+1)+" "+(j*3+2)+" "+(j*3+3)+ " 0\n"); //j1 V j2 V j3
 		}
 		
 		for (int c=1; c<=3; c++) {
 			for (int i=0; i<g.getN(); i++) {
-				writer.write(i+""+c+" ");
+				writer.write((i*3+c)+" ");
 			}
 			writer.write(" 0\n");
 		}
@@ -228,12 +222,12 @@ public class SAT_SOLVER{
 		float den=Float.parseFloat(scan.readLine());
 		
 		char[][] AdM= new char [n][n];
+		String cbuf=null;
 		for (int i=0; i<n; i++) {
+			cbuf=scan.readLine();
 			for(int j=0; j<n; j++) {
-				AdM[i][j]=(char) scan.read();
-				scan.read();
+				AdM[i][j]=cbuf.charAt(2*j);
 			}
-			scan.readLine();
 		}
 		
 		scan.readLine();
@@ -241,15 +235,59 @@ public class SAT_SOLVER{
 		
 		char[][] SyM= new char [n][n];
 		for (int i=0; i<n; i++) {
+			cbuf=scan.readLine();
 			for(int j=0; j<n; j++) {
-				SyM[i][j]=(char) scan.read();
-				scan.read();
+				SyM[i][j]=cbuf.charAt(2*j);
 			}
-			scan.readLine();
 		}
 		
 		scan.close();
 		return (new Graph(n,pos,neg,den,AdM,SyM));
+	}
+	
+	private static void printResults(String t) {
+		ArrayList<Integer> Set1=new ArrayList<Integer>();
+		ArrayList<Integer> Set2=new ArrayList<Integer>();
+		ArrayList<Integer> Set3=new ArrayList<Integer>();
+		
+		String res[]=t.split(" ");
+		int i=1; //skip the v
+		
+		while(i<res.length-1){
+						
+			int a=Integer.parseInt(res[i]);
+			
+			if (a<=0) {
+				i++;
+			}else{
+				switch(a % 3){
+					case 1: Set1.add((int)(a/3) + 1); i++; break;
+					case 2: Set2.add((int)(a/3) + 1); i++; break;
+					case 0: Set3.add((int)(a/3)    ); i++; break;
+					default:i++;
+				}
+			}
+		}
+		
+		System.out.println("The three (3) set that can be generated based"
+				+ " on the matrix above are:");
+		System.out.print("Set 1 = { ");
+		System.out.print(Set1.get(0));
+		for (int x=1; x<Set1.size(); x++)
+			System.out.print(", " + Set1.get(x));
+		System.out.println(" }");
+		
+		System.out.print("Set 2 = { ");
+		System.out.print(Set2.get(0));
+		for (int x=1; x<Set2.size(); x++)
+			System.out.print(", " + Set2.get(x));
+		System.out.println(" }");
+		
+		System.out.print("Set 3 = { ");
+		System.out.print(Set3.get(0));
+		for (int x=1; x<Set3.size(); x++)
+			System.out.print(", " + Set3.get(x));
+		System.out.println(" }");
 	}
 		
 	public static void main(String[]args) {
@@ -257,21 +295,21 @@ public class SAT_SOLVER{
 		Graph g = null;
 		
 		if(args[0].equals("0")) {
-			//System.out.print("Please give a Graph Text: ");
-			//String s=scan.nextLine();
-			//g=createGraphFromTXT(s);
+			System.out.print("Please give a Graph Text: ");
+			String s=scan.nextLine();
 			try {
-				g=createGraphFromTXT("graph.txt");
+				g=createGraphFromTXT(s);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 			
 		}else {
-			g=createGraph();
+			g=createGraph(); // create random graph
 		}
 		scan.close();
 		
 		
+		//generate the CNF file
 		try {
 			generateCNF(g);
 		} catch (FileNotFoundException e) {
@@ -279,5 +317,42 @@ public class SAT_SOLVER{
 		} catch (UnsupportedEncodingException e) {
 			e.printStackTrace();
 		}
+		
+		//open terminal inside lingeling_solver
+		ProcessBuilder pb=new ProcessBuilder("./lingeling", "PROBLEM.cnf");
+				
+		Process process=null;
+		try {
+			process = pb.start();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		if(process==null){
+			System.out.println("Problem with lingeling");
+			System.exit(1);
+		}
+		
+		//get the result of lingeling from the process
+		Scanner result=new Scanner(process.getInputStream());
+		
+		String line=null;
+		boolean flag=false;
+		while(result.hasNextLine()){
+			line=result.nextLine();
+			if (line.contains("UNSATISFIABLE")){
+				System.out.println("The given graph cannot be devided into a total "
+						+ "of (3) sets");
+				flag=true;
+			}
+			if (line.contains("SATISFIABLE")){
+				printResults(result.nextLine());
+				flag=true;
+			}
+		}
+		if(!flag)
+			System.out.println("There is an error with the Lingeling result file");
+		
+		result.close();
 	}
 }
