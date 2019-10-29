@@ -2,12 +2,14 @@ package Sat_solver;
 
 import java.io.*;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Random;
 import java.util.Scanner;
 
 public class SAT_SOLVER{
-		
+	
+	/*
+	 * Generates a random symbol matrix based on the adjacency matrix
+	 */
 	private static char[][] randSymMatrix
 	(int n, float neg, float pos, int edges, char[][] graphAdj) {
 		// TODO Auto-generated method stub
@@ -50,6 +52,9 @@ public class SAT_SOLVER{
 		return SymMatrix;
 	}
 
+	/*
+	 * Generates a random Adjacency matrix based on the adjacency matrix
+	 */
 	private static char[][] randomAdjMatrix(int n, int e) {
 		char[][] adjMatrix = new char[n][n];
 		int c=0;
@@ -62,7 +67,7 @@ public class SAT_SOLVER{
 		Random rand = new Random();
 		while (c<e) {
 			int x=rand.nextInt(n-1) + 1 ; // from 1 to n-1
-			int y=rand.nextInt(x); // from 0 to x (all values over the diagonal i:i)
+			int y=rand.nextInt(x); // from 0 to x (values over the diagonal i:i)
 			if (adjMatrix[x][y]!='1') {
 				adjMatrix[x][y]='1';
 				adjMatrix[y][x]='1';
@@ -72,7 +77,7 @@ public class SAT_SOLVER{
 		
 		return adjMatrix;
 	}
-
+ 
 	/*
 	 * Creates a random graph
 	 */
@@ -160,6 +165,9 @@ public class SAT_SOLVER{
 		return g;
 	}
 	
+	/*
+	 * Generates the cnf file that will be given to lingeling sovler
+	 */
 	private static void generateCNF(Graph g) throws FileNotFoundException, UnsupportedEncodingException {
 		char[][] sMatrix=g.getSymbolMatrix();
 		int var=3*g.getN();
@@ -214,6 +222,9 @@ public class SAT_SOLVER{
 		writer.close();
 	}
 	
+	/*
+	 * Creates a Graph object from the given txt file
+	 */
 	private static Graph createGraphFromTXT(String s) throws IOException {
 		BufferedReader scan = new BufferedReader(new InputStreamReader(new FileInputStream(new File(s))));
 		int n=Integer.parseInt(scan.readLine());
@@ -245,6 +256,12 @@ public class SAT_SOLVER{
 		return (new Graph(n,pos,neg,den,AdM,SyM));
 	}
 	
+	/**
+	 * Reads the solution line and translates the result to a user friendly
+	 * form
+	 * 
+	 * @param t the line with the lingeling solutions
+	 */
 	private static void printResults(String t) {
 		ArrayList<Integer> Set1=new ArrayList<Integer>();
 		ArrayList<Integer> Set2=new ArrayList<Integer>();
@@ -295,7 +312,7 @@ public class SAT_SOLVER{
 		Graph g = null;
 		
 		if(args[0].equals("0")) {
-			System.out.print("Please give a Graph Text: ");
+			System.out.print("Please give a .txt file with a Graph: ");
 			String s=scan.nextLine();
 			try {
 				g=createGraphFromTXT(s);
@@ -305,6 +322,8 @@ public class SAT_SOLVER{
 			
 		}else {
 			g=createGraph(); // create random graph
+			System.out.println("The random graph created"
+					+ " can be found on the file graph.txt");
 		}
 		scan.close();
 		
@@ -337,21 +356,22 @@ public class SAT_SOLVER{
 		Scanner result=new Scanner(process.getInputStream());
 		
 		String line=null;
-		boolean flag=false;
+		boolean b=false;
+		
 		while(result.hasNextLine()){
 			line=result.nextLine();
 			if (line.contains("UNSATISFIABLE")){
-				System.out.println("The given graph cannot be devided into a total "
-						+ "of (3) sets");
-				flag=true;
+				System.out.println("The given graph cannot be devided into a "
+						+ " total of (3) sets");
+				b=true;
 			}
 			if (line.contains("SATISFIABLE")){
 				printResults(result.nextLine());
-				flag=true;
+				b=true;
 			}
 		}
-		if(!flag)
-			System.out.println("There is an error with the Lingeling result file");
+		if(!b)
+			System.out.println("Error with the Lingeling result file");
 		
 		result.close();
 	}
